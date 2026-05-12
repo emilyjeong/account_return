@@ -12,7 +12,7 @@ const Charts = (() => {
 
   // CSS 변수에서 색상 읽기
   const cssVar = (name) => getComputedStyle(document.documentElement)
-    .getPropertyValue(name).trim() || '#888';
+    .getPropertyValue(name).trim() || '#e8e4dc';
 
   // 도넛 팔레트
   const palette = () => [
