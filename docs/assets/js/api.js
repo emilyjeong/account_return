@@ -1,11 +1,7 @@
 /**
  * ═════════════════════════════════════════════════════════════
- * API 래퍼 (api.js)
- *   GAS Web App과 통신하는 fetch 함수들
- *
- *   ⚠️ POST는 CORS preflight 회피를 위해
- *      Content-Type: text/plain 으로 전송합니다.
- *      (GAS Web App은 어차피 e.postData.contents 로 받음)
+ * API 래퍼 (api.js) — v2 계좌 컬럼 지원
+ *   ⚠️ POST는 CORS preflight 회피 위해 Content-Type: text/plain
  * ═════════════════════════════════════════════════════════════
  */
 
@@ -16,7 +12,6 @@ const API = (() => {
     return `${CONFIG.GAS_URL}${qs ? '?' + qs : ''}`;
   }
 
-  /** GET 요청 */
   async function get(params) {
     const res = await fetch(buildUrl(params), { method: 'GET', redirect: 'follow' });
     if (!res.ok) throw new Error(`GET 실패: HTTP ${res.status}`);
@@ -25,7 +20,6 @@ const API = (() => {
     return data;
   }
 
-  /** POST 요청 (CORS 회피용 text/plain) */
   async function post(body) {
     const res = await fetch(CONFIG.GAS_URL, {
       method: 'POST',
@@ -40,15 +34,14 @@ const API = (() => {
     return data;
   }
 
-  // ─── 도메인 API ───────────────────────────────────────────
   return {
-    getPortfolio: (who = 'both')      => get({ action: 'portfolio', who }),
-    getSnapshots: ()                  => get({ action: 'snapshots' }),
-    getHistory:   (limit = 100)       => get({ action: 'history', limit }),
+    getPortfolio: (who = 'both')         => get({ action: 'portfolio', who }),
+    getSnapshots: ()                     => get({ action: 'snapshots' }),
+    getHistory:   (limit = 100)          => get({ action: 'history', limit }),
 
-    updateHolding: (who, payload)     => post({ action: 'update', who, payload }),
-    createHolding: (who, payload)     => post({ action: 'create', who, payload }),
-    deleteHolding: (who, name)        => post({ action: 'delete', who, payload: { name } }),
-    lookupTicker:  (name)             => post({ action: 'lookup', payload: { name } })
+    updateHolding: (who, payload)        => post({ action: 'update', who, payload }),
+    createHolding: (who, payload)        => post({ action: 'create', who, payload }),
+    deleteHolding: (who, name, account)  => post({ action: 'delete', who, payload: { name, account } }),
+    lookupTicker:  (name)                => post({ action: 'lookup', payload: { name } })
   };
 })();
