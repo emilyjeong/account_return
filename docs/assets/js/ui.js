@@ -52,6 +52,7 @@ const UI = (() => {
 
     const retEl = document.getElementById(`${prefix}Return`);
     retEl.textContent = pctText(data.returnRate);
+    retEl.className = 'card-value-md ' + pnlClass(data.returnRate); 
 
     setText(`${prefix}AsOf`, `기준일: ${fmtDate(new Date().toISOString())}`);
     renderHoldingsTable(`${prefix}Holdings`, who, data.holdings);
