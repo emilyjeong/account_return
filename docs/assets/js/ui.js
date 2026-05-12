@@ -1,13 +1,11 @@
 /**
  * ═════════════════════════════════════════════════════════════
- * UI 렌더링 (ui.js)
- *   카드/테이블/페이지 데이터 채우기 + 모달 제어
+ * UI 렌더링 (ui.js) — v2 계좌 컬럼 지원
  * ═════════════════════════════════════════════════════════════
  */
 
 const UI = (() => {
 
-  // ─── 포맷터 ────────────────────────────────────────────────
   const fmtKRW = (n) => CONFIG.CURRENCY + Math.round(n || 0).toLocaleString(CONFIG.LOCALE);
   const fmtPct = (n) => (n * 100).toFixed(2) + '%';
   const fmtDate = (iso) => {
@@ -17,26 +15,22 @@ const UI = (() => {
     return d.toISOString().slice(0, 10);
   };
 
-  /** 손익 색상 (양수=초록 success, 음수=빨강 danger, 0=중립 회색) */
   function pnlClass(n) {
     if (n > 0) return 'success-color';
     if (n < 0) return 'danger-color';
     return 'text-secondary';
   }
 
-  /** 손익 + 부호 텍스트 */
   function pnlText(n) {
     if (n > 0) return '+' + fmtKRW(n);
     return fmtKRW(n);
   }
 
-  /** 손익률 + 부호 텍스트 */
   function pctText(n) {
     if (n > 0) return '+' + fmtPct(n);
     return fmtPct(n);
   }
 
-  // ─── 부부 합산 탭 렌더 ─────────────────────────────────────
   function renderCouple(data) {
     if (!data || !data.combined) return;
     setText('coupleTotalValue', fmtKRW(data.combined.totalValue));
@@ -46,28 +40,23 @@ const UI = (() => {
     setText('coupleAsOf', fmtDate(data.generatedAt));
   }
 
-  // ─── 아내/남편 탭 렌더 (공통) ───────────────────────────────
   function renderPersonal(who, data) {
     if (!data) return;
-    const prefix = who; // 'wife' 또는 'husband'
+    const prefix = who;
     setText(`${prefix}TotalValue`, fmtKRW(data.totalValue));
     setText(`${prefix}TotalCost`,  fmtKRW(data.totalCost));
 
-    // 평가손익 — 값 기반으로 색 클래스 동적 설정
     const pnlEl = document.getElementById(`${prefix}TotalPnl`);
     pnlEl.textContent = pnlText(data.totalPnl);
     pnlEl.className = 'card-value-md ' + pnlClass(data.totalPnl);
 
-    // 수익률 — 평가손익과 동일하게 +/- 동적 컬러
     const retEl = document.getElementById(`${prefix}Return`);
     retEl.textContent = pctText(data.returnRate);
-    retEl.className = 'card-value-md ' + pnlClass(data.returnRate);
 
     setText(`${prefix}AsOf`, `기준일: ${fmtDate(new Date().toISOString())}`);
     renderHoldingsTable(`${prefix}Holdings`, who, data.holdings);
   }
 
-  // ─── 보유 종목 테이블 ──────────────────────────────────────
   function renderHoldingsTable(containerId, who, holdings) {
     const el = document.getElementById(containerId);
     if (!el) return;
@@ -77,7 +66,6 @@ const UI = (() => {
       return;
     }
 
-    // 수익률 내림차순
     const sorted = [...holdings].sort((a, b) => b.returnRate - a.returnRate);
 
     let html = `
@@ -90,10 +78,12 @@ const UI = (() => {
 
     sorted.forEach(h => {
       const retCls = pnlClass(h.returnRate);
+      // 계좌 정보를 종목명 아래에 표시
+      const accountLabel = h.account ? `<span class="account-badge">${escapeHtml(h.account)}</span>` : '';
       html += `
         <div class="holdings-row">
           <div class="name">
-            ${escapeHtml(h.name)}
+            ${escapeHtml(h.name)} ${accountLabel}
             <span class="ticker">${escapeHtml(String(h.ticker))} · ${escapeHtml(h.sector || '')}</span>
           </div>
           <div class="value">
@@ -103,7 +93,8 @@ const UI = (() => {
           <button class="edit-btn"
                   data-action="edit"
                   data-who="${who}"
-                  data-name="${encodeURIComponent(h.name)}">수정</button>
+                  data-name="${encodeURIComponent(h.name)}"
+                  data-account="${encodeURIComponent(h.account || '')}">수정</button>
         </div>
       `;
     });
@@ -111,7 +102,6 @@ const UI = (() => {
     el.innerHTML = html;
   }
 
-  // ─── 탭 전환 ───────────────────────────────────────────────
   function switchTab(name) {
     document.querySelectorAll('.tab-btn').forEach(b => {
       b.classList.toggle('active', b.dataset.tab === name);
@@ -121,7 +111,6 @@ const UI = (() => {
     });
   }
 
-  // ─── 로더 / 에러 ───────────────────────────────────────────
   function showLoader(show) {
     document.getElementById('globalLoader').classList.toggle('hidden', !show);
   }
@@ -133,12 +122,12 @@ const UI = (() => {
     setTimeout(() => el.classList.add('hidden'), 6000);
   }
 
-  // ─── 모달 ──────────────────────────────────────────────────
   function openModal(mode, who, holding) {
     const titleEl   = document.getElementById('modalTitle');
     const modeEl    = document.getElementById('fld-mode');
     const whoEl     = document.getElementById('fld-who');
     const nameEl    = document.getElementById('fld-name');
+    const accountEl = document.getElementById('fld-account');
     const tickerEl  = document.getElementById('fld-ticker');
     const marketEl  = document.getElementById('fld-market');
     const qtyEl     = document.getElementById('fld-qty');
@@ -147,29 +136,32 @@ const UI = (() => {
     const memoEl    = document.getElementById('fld-memo');
     const delBtn    = document.getElementById('btn-delete');
 
-    modeEl.value = mode;       // 'create' or 'edit'
+    modeEl.value = mode;
     whoEl.value  = who;
     titleEl.textContent = (mode === 'edit' ? '종목 수정' : '종목 추가') +
                           (who === 'wife' ? ' · 아내' : ' · 남편');
 
     if (mode === 'edit' && holding) {
-      nameEl.value   = holding.name;
-      tickerEl.value = String(holding.ticker || '');
-      marketEl.value = holding.market || 'KR';
-      qtyEl.value    = holding.qty;
-      avgEl.value    = holding.avg;
-      sectorEl.value = holding.sector || '기타';
-      memoEl.value   = holding.memo || '';
-      nameEl.readOnly = true;       // 수정 모드에선 종목명 잠금 (시트 매칭 기준)
+      nameEl.value    = holding.name;
+      accountEl.value = holding.account || '일반';
+      tickerEl.value  = String(holding.ticker || '');
+      marketEl.value  = holding.market || 'KR';
+      qtyEl.value     = holding.qty;
+      avgEl.value     = holding.avg;
+      sectorEl.value  = holding.sector || '기타';
+      memoEl.value    = holding.memo || '';
+      // 수정 모드에선 매칭 키(종목명+계좌) 잠금
+      nameEl.readOnly = true;
+      accountEl.readOnly = true;
       tickerEl.readOnly = true;
       marketEl.disabled = true;
       delBtn.classList.remove('hidden');
     } else {
-      nameEl.value = tickerEl.value = memoEl.value = '';
+      nameEl.value = accountEl.value = tickerEl.value = memoEl.value = '';
       qtyEl.value = avgEl.value = '';
       marketEl.value = 'KR';
       sectorEl.value = '기타';
-      nameEl.readOnly = tickerEl.readOnly = false;
+      nameEl.readOnly = accountEl.readOnly = tickerEl.readOnly = false;
       marketEl.disabled = false;
       delBtn.classList.add('hidden');
     }
@@ -186,18 +178,18 @@ const UI = (() => {
       mode: document.getElementById('fld-mode').value,
       who:  document.getElementById('fld-who').value,
       payload: {
-        name:   document.getElementById('fld-name').value.trim(),
-        ticker: document.getElementById('fld-ticker').value.trim(),
-        market: document.getElementById('fld-market').value,
-        qty:    Number(document.getElementById('fld-qty').value),
-        avg:    Number(document.getElementById('fld-avg').value),
-        sector: document.getElementById('fld-sector').value,
-        memo:   document.getElementById('fld-memo').value.trim()
+        name:    document.getElementById('fld-name').value.trim(),
+        account: document.getElementById('fld-account').value.trim() || '일반',
+        ticker:  document.getElementById('fld-ticker').value.trim(),
+        market:  document.getElementById('fld-market').value,
+        qty:     Number(document.getElementById('fld-qty').value),
+        avg:     Number(document.getElementById('fld-avg').value),
+        sector:  document.getElementById('fld-sector').value,
+        memo:    document.getElementById('fld-memo').value.trim()
       }
     };
   }
 
-  // ─── 유틸 ──────────────────────────────────────────────────
   function setText(id, text) {
     const el = document.getElementById(id);
     if (el) el.textContent = text;
