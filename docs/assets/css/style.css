@@ -613,6 +613,16 @@ input, select, button { font-size: 14px; font-family: var(--font-sans); }
 }
 .loader.hidden { display: none; }
 
+/* 로딩 이모지 펄스 애니메이션 */
+.loader-emoji {
+  display: inline-block;
+  animation: loader-pulse 1.2s ease-in-out infinite;
+}
+@keyframes loader-pulse {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50%      { transform: scale(1.35) rotate(8deg); }
+}
+
 .error-banner {
   background-color: color-mix(in srgb, var(--neg) 13%, var(--bg));
   color: var(--neg);
