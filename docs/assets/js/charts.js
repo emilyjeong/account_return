@@ -10,27 +10,23 @@ const Charts = (() => {
 
   // ─── 색상 (디자인 시스템 토큰값을 직접 박음) ─────────────
   const COLORS = {
-    // 텍스트/배경/보더
-    inkPrimary:   '#f0ede8',   // --ink
-    inkMid:       '#9a9690',   // --ink-mid
-    inkDim:       '#565250',   // --ink-dim
-    border:       '#2a2926',   // --border
-    borderStrong: '#353330',   // --border-mid
-    bgCard:       '#161513',   // --card
-    bgElevated:   '#1c1b19',   // --card-hi
+    inkPrimary:   '#f0ede8',
+    inkMid:       '#9a9690',
+    inkDim:       '#565250',
+    border:       '#2a2926',
+    borderStrong: '#353330',
+    bgCard:       '#161513',
+    bgElevated:   '#1c1b19',
 
-    // 의미색
-    pos:          '#00c98a',   // --pos (수익)
-    neg:          '#f04d62',   // --neg (손실)
-    accent:       '#e8b800',   // --accent (강조)
-    info:         '#5aabf0',   // --info
-    purple:       '#b8a8f0',   // --purple
+    pos:          '#00c98a',
+    neg:          '#f04d62',
+    accent:       '#e8b800',
+    info:         '#5aabf0',
+    purple:       '#b8a8f0',
 
-    // 탭 시그니처 — 차트 라인 컬러
-    wife:         '#b8a8f0',   // 아내 → 퍼플
-    husband:      '#5aabf0',   // 남편 → 인포 블루
+    wife:         '#b8a8f0',   // Em → 퍼플
+    husband:      '#5aabf0',   // Fabio → 인포 블루
 
-    // 도넛 차트 팔레트 (12색)
     palette: [
       '#5aabf0', '#00c98a', '#e8b800', '#f07a40',
       '#b8a8f0', '#6dc7c9', '#f04d62', '#9a9690',
@@ -38,15 +34,12 @@ const Charts = (() => {
     ]
   };
 
-  // 인스턴스 캐시 (canvas id → Chart 객체)
   const instances = {};
 
-  /** 기존 차트 파괴 후 새로 생성 */
   function makeChart(canvasId, config) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return null;
     if (instances[canvasId]) instances[canvasId].destroy();
-    // empty 메시지 제거
     const parent = ctx.parentElement;
     const oldMsg = parent && parent.querySelector('.empty-chart-msg');
     if (oldMsg) oldMsg.remove();
@@ -54,7 +47,6 @@ const Charts = (() => {
     return instances[canvasId];
   }
 
-  /** 빈 차트 영역에 안내 메시지 표시 */
   function showEmpty(canvasId, message) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
@@ -143,9 +135,9 @@ const Charts = (() => {
       data: {
         labels: snapshots.map(s => s.date.slice(0, 7)),
         datasets: [
-          areaDataset('🤵 남편', snapshots.map(s => Math.round(s.husbandValue / 10000)),
+          areaDataset('🦊 Fabio', snapshots.map(s => Math.round(s.husbandValue / 10000)),
                       COLORS.husband, '#5aabf055'),
-          areaDataset('👰 아내', snapshots.map(s => Math.round(s.wifeValue / 10000)),
+          areaDataset('🐰 Em', snapshots.map(s => Math.round(s.wifeValue / 10000)),
                       COLORS.wife, '#b8a8f055')
         ]
       },
@@ -171,8 +163,8 @@ const Charts = (() => {
       data: {
         labels: snapshots.map(s => s.date.slice(0, 7)),
         datasets: [
-          lineDataset('👰 아내 수익률(%)', wifeRet, COLORS.wife),
-          lineDataset('🤵 남편 수익률(%)', husbandRet, COLORS.husband)
+          lineDataset('🐰 Em 수익률(%)', wifeRet, COLORS.wife),
+          lineDataset('🦊 Fabio 수익률(%)', husbandRet, COLORS.husband)
         ]
       },
       options: lineOptions({
@@ -183,8 +175,6 @@ const Charts = (() => {
   }
 
   // ─── 라인: 개인 투입금 vs 평가금 ───────────────────────────
-  //   평가금 = --accent (디자인 시스템 강조 컬러, 노란색)으로 통일
-  //   투입금 = --ink-dim (회색, 점선) — 원본 그대로
   function costVsValueLine(canvasId, snapshots, who) {
     if (!snapshots.length) {
       showEmpty(canvasId, '월말 스냅샷이 아직 없어요.\nApps Script의 takeSnapshotNow() 실행하면 점이 추가돼요.');
@@ -192,7 +182,7 @@ const Charts = (() => {
     }
     const valueKey = who === 'wife' ? 'wifeValue' : 'husbandValue';
     const costKey  = who === 'wife' ? 'wifeCost'  : 'husbandCost';
-    const valueColor = COLORS.accent;   // 평가금은 아내/남편 무관하게 강조 컬러
+    const valueColor = COLORS.accent;
 
     return makeChart(canvasId, {
       type: 'line',
@@ -229,7 +219,6 @@ const Charts = (() => {
     });
   }
 
-  // ─── 헬퍼: 라인 데이터셋 ──────────────────────────────────
   function lineDataset(label, data, color) {
     return {
       label, data,
@@ -256,7 +245,6 @@ const Charts = (() => {
     };
   }
 
-  // ─── 헬퍼: 공통 라인 옵션 ─────────────────────────────────
   function lineOptions({ yFormat, tooltipLabel }) {
     return {
       responsive: true,
@@ -291,7 +279,6 @@ const Charts = (() => {
     };
   }
 
-  // ─── 헬퍼: 툴팁 스타일 ────────────────────────────────────
   function tooltipStyle({ label }) {
     return {
       backgroundColor: COLORS.bgElevated,
