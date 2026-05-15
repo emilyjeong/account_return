@@ -10,7 +10,7 @@
 
 const CONFIG = {
   // ⬇️ GAS Web App URL (v2 재배포)
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbxr_HFSRf7V_wO8wX0Ng_aeCmMLzrBRupLqiOtYJdCfREoRQMLFwMKjmEX9yD8RMVejMQ/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbw4ToimVLx0Q_qTwaJyGw0Z0-NBcbl89NrYb3w_aUI_eknj9iJ3CsRMH_fM5kQ7SQcluQ/exec',
 
   // ─── 동작 옵션 ───────────────────────────────────────────
   DEFAULT_TAB: 'couple',
